@@ -2,6 +2,7 @@
 #include <atomic>
 #include <iostream>
 #include <pqrs/osx/autorelease_pool.hpp>
+#include <stdexcept>
 #include <thread>
 #include <type_traits>
 
@@ -86,6 +87,38 @@ int main() {
            passed;
   passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
                   "worker thread pool releases its autoreleased object") &&
+           passed;
+
+  auto object_was_alive_in_execute = false;
+
+  pqrs::osx::autorelease_pool::execute_with_autorelease_pool([&object_was_alive_in_execute] {
+    pqrs_osx_autorelease_pool_test_create_autoreleased_object();
+    object_was_alive_in_execute = pqrs_osx_autorelease_pool_test_object_count() == 1;
+  });
+
+  passed = expect(object_was_alive_in_execute,
+                  "autoreleased object remains alive inside execute_with_autorelease_pool") &&
+           passed;
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
+                  "execute_with_autorelease_pool releases its autoreleased object") &&
+           passed;
+
+  auto exception_was_caught = false;
+
+  try {
+    pqrs::osx::autorelease_pool::execute_with_autorelease_pool([] {
+      pqrs_osx_autorelease_pool_test_create_autoreleased_object();
+      throw std::runtime_error("test");
+    });
+  } catch (const std::runtime_error&) {
+    exception_was_caught = true;
+  }
+
+  passed = expect(exception_was_caught,
+                  "execute_with_autorelease_pool propagates exceptions") &&
+           passed;
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
+                  "execute_with_autorelease_pool releases its autoreleased object when an exception is thrown") &&
            passed;
 
   return passed ? 0 : 1;
