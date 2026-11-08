@@ -6,7 +6,7 @@
 #error "TestHelper.m must be compiled with -fno-objc-arc"
 #endif
 
-static bool object_is_alive = false;
+static size_t object_count = 0;
 
 @interface TestObject : NSObject
 @end
@@ -17,14 +17,14 @@ static bool object_is_alive = false;
   self = [super init];
 
   if (self) {
-    object_is_alive = true;
+    ++object_count;
   }
 
   return self;
 }
 
 - (void)dealloc {
-  object_is_alive = false;
+  --object_count;
 
   [super dealloc];
 }
@@ -35,6 +35,6 @@ void pqrs_osx_autorelease_pool_test_create_autoreleased_object(void) {
   [[[TestObject alloc] init] autorelease];
 }
 
-bool pqrs_osx_autorelease_pool_test_object_is_alive(void) {
-  return object_is_alive;
+size_t pqrs_osx_autorelease_pool_test_object_count(void) {
+  return object_count;
 }

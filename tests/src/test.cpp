@@ -24,8 +24,8 @@ int main() {
 
   auto passed = true;
 
-  passed = expect(!pqrs_osx_autorelease_pool_test_object_is_alive(),
-                  "test object is initially released") &&
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
+                  "there are initially no test objects") &&
            passed;
 
   {
@@ -33,32 +33,42 @@ int main() {
 
     pqrs_osx_autorelease_pool_test_create_autoreleased_object();
 
-    passed = expect(pqrs_osx_autorelease_pool_test_object_is_alive(),
+    passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 1,
                     "autoreleased object remains alive inside the pool") &&
              passed;
   }
 
-  passed = expect(!pqrs_osx_autorelease_pool_test_object_is_alive(),
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
                   "autoreleased object is released when the pool is destroyed") &&
            passed;
 
   {
     pqrs::osx::autorelease_pool::scoped_autorelease_pool outer_pool;
 
+    pqrs_osx_autorelease_pool_test_create_autoreleased_object();
+
+    passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 1,
+                    "outer pool keeps its autoreleased object alive") &&
+             passed;
+
     {
       pqrs::osx::autorelease_pool::scoped_autorelease_pool inner_pool;
 
       pqrs_osx_autorelease_pool_test_create_autoreleased_object();
 
-      passed = expect(pqrs_osx_autorelease_pool_test_object_is_alive(),
-                      "autoreleased object remains alive inside the inner pool") &&
+      passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 2,
+                      "outer and inner pool objects remain alive inside the inner pool") &&
                passed;
     }
 
-    passed = expect(!pqrs_osx_autorelease_pool_test_object_is_alive(),
-                    "inner pool releases its autoreleased object") &&
+    passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 1,
+                    "inner pool releases only its autoreleased object") &&
              passed;
   }
+
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
+                  "outer pool releases its autoreleased object") &&
+           passed;
 
   std::atomic<bool> object_was_alive_in_worker_pool{false};
 
@@ -66,7 +76,7 @@ int main() {
     pqrs::osx::autorelease_pool::scoped_autorelease_pool pool;
 
     pqrs_osx_autorelease_pool_test_create_autoreleased_object();
-    object_was_alive_in_worker_pool = pqrs_osx_autorelease_pool_test_object_is_alive();
+    object_was_alive_in_worker_pool = pqrs_osx_autorelease_pool_test_object_count() == 1;
   });
 
   worker.join();
@@ -74,7 +84,7 @@ int main() {
   passed = expect(object_was_alive_in_worker_pool.load(),
                   "autoreleased object remains alive inside a worker thread pool") &&
            passed;
-  passed = expect(!pqrs_osx_autorelease_pool_test_object_is_alive(),
+  passed = expect(pqrs_osx_autorelease_pool_test_object_count() == 0,
                   "worker thread pool releases its autoreleased object") &&
            passed;
 
