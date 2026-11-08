@@ -1,0 +1,22 @@
+name: example
+
+targets:
+  example:
+    type: tool
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: main.cpp
+        compilerFlags:
+          - -Wall
+          - -Werror
+          - "-std=c++23"
+      - path: ../src/pqrs/osx/autorelease_pool/PQRSOSXAutoreleasePoolImpl.m
+        compilerFlags:
+          - -Wall
+          - -Werror
+          - -fno-objc-arc
+    settings:
+      base:
+        SYSTEM_HEADER_SEARCH_PATHS:
+          - ../include

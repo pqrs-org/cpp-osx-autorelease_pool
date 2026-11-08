@@ -1,0 +1,27 @@
+name: test
+
+targets:
+  test:
+    type: tool
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: test.cpp
+        compilerFlags:
+          - -Wall
+          - -Werror
+          - "-std=c++23"
+      - path: TestHelper.m
+        compilerFlags:
+          - -Wall
+          - -Werror
+          - -fno-objc-arc
+      - path: ../../src/pqrs/osx/autorelease_pool/PQRSOSXAutoreleasePoolImpl.m
+        compilerFlags:
+          - -Wall
+          - -Werror
+          - -fno-objc-arc
+    settings:
+      base:
+        SYSTEM_HEADER_SEARCH_PATHS:
+          - ../../include
